@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-set (CMAKE_CXX_STANDARD 11)
-
-project(BruteForce)
-
 set(CMAKE_C_COMPILER "/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang")
 set(CMAKE_CXX_COMPILER "/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang++")
 set(OPENMP_LIBRARIES "/opt/homebrew/Cellar/llvm/13.0.0_2/lib")
@@ -47,18 +43,6 @@ add_subdirectory(indexing)
 
 add_subdirectory(distances)
 
-include_directories(include)
-
-include_directories(indexing)
-
-include_directories(distances)
-
 add_executable(BruteForce test/test_demo_sift1M.cpp)
 
 target_link_libraries(BruteForce PUBLIC BruteForceIndexing BruteForceInclude BruteForceDistances)
-
-target_include_directories(BruteForce PUBLIC
-        "indexing"
-        "include"
-        "distances"
-        )

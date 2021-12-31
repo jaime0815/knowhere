@@ -23,10 +23,50 @@ set(CMAKE_BUILD_TYPE  "Debug")
 set(CMAKE_CUDA_COMPILER  "/usr/local/cuda/bin/nvcc")
 set(MILVUS_ENABLE_PROFILING  "OFF")
 
-if (NOT CMAKE_INSTALL_PREFIX) 
+OPTION (USE_OpenMP "Use OpenMP to enable <omp.h>" ON)
+
+IF (APPLE)
+    set(CMAKE_C_COMPILER "/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang")
+    set(CMAKE_CXX_COMPILER "/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang++")
+    set(OPENMP_LIBRARIES "/opt/homebrew/Cellar/llvm/13.0.0_2/lib")
+    set(OPENMP_INCLUDES "/opt/homebrew/Cellar/llvm/13.0.0_2/include")
+
+
+    if(USE_OpenMP)
+        if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+            set(OpenMP_C "${CMAKE_C_COMPILER}")
+            set(OpenMP_C_FLAGS "-fopenmp=libomp -Wno-unused-command-line-argument")
+            set(OpenMP_C_LIB_NAMES "libomp" "libgomp" "libiomp5")
+            set(OpenMP_libomp_LIBRARY ${OpenMP_C_LIB_NAMES})
+            set(OpenMP_libgomp_LIBRARY ${OpenMP_C_LIB_NAMES})
+            set(OpenMP_libiomp5_LIBRARY ${OpenMP_C_LIB_NAMES})
+        endif()
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(OpenMP_CXX "${CMAKE_CXX_COMPILER}")
+            set(OpenMP_CXX_FLAGS "-fopenmp=libomp -Wno-unused-command-line-argument")
+            set(OpenMP_CXX_LIB_NAMES "libomp" "libgomp" "libiomp5")
+            set(OpenMP_libomp_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+            set(OpenMP_libgomp_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+            set(OpenMP_libiomp5_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+        endif()
+    endif()
+    if (OPENMP_FOUND)
+        include_directories("${OPENMP_INCLUDES}")
+        link_directories("${OPENMP_LIBRARIES}")
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif(OPENMP_FOUND)
+endif()
+
+if(USE_OpenMP)
+    find_package(OpenMP REQUIRED)
+endif(USE_OpenMP)
+
+
+
+if (NOT CMAKE_INSTALL_PREFIX)
     set(CMAKE_INSTALL_PREFIX "./cmake_build")
 endif (NOT CMAKE_INSTALL_PREFIX)
-
 
 # if no build build type is specified, default to release builds
 if (NOT CMAKE_BUILD_TYPE)
@@ -88,7 +128,12 @@ if (MILVUS_SUPPORT_SPTAG)
     add_compile_definitions("MILVUS_SUPPORT_SPTAG")
 endif ()
 
-include(ThirdPartyPackagesCore)
+if (APPLE)
+    add_subdirectory(selfdev/bruteforce)
+else ()
+    include(ThirdPartyPackagesCore)
+endif()
+
 add_subdirectory(thirdparty)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -103,7 +148,9 @@ else ()
     endif ()
 endif ()
 
-add_subdirectory(knowhere)
+IF (NOT APPLE)
+    add_subdirectory(knowhere)
+endif()
 
 if (BUILD_COVERAGE STREQUAL "ON")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
